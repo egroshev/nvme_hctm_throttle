@@ -42,6 +42,16 @@
 # default on its own and your SSDs performance will be in a throttled state
 # unless this procedure is explicitely run again to restore the TMT values.
 # Modifying your SSD's thermal management settings is an advanced operation.
+#
+# Manually Running nvme-cli Commands
+# --- Check if HCTM is supported (1), and  minimum and maiximum accepted TMT temperature.
+# sudo nvme id-ctrl /dev/nvme0 -o json | jq -r '"\(.hctma) \(.mntmt) \(.mxtmt)"'
+# --- Get Default TMT1 and TMT2 values ---
+# vals=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 1 -o json | jq .dw0) && echo "$((vals & 0xFFFF)) $(( (vals >> 16) & 0xFFFF))"
+# --- Get Current TMT1 and TMT2 values ---
+# vals=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 0 -o json | jq .dw0) && echo "$((vals & 0xFFFF)) $(( (vals >> 16) & 0xFFFF))"
+# -- Set your TMT1 and TMT2 values. Here I assume the reported mntmt was 273 Kelvin ---
+# sudo nvme set-feature /dev/nvme0 -f 0x10 -v $(( (273 << 16) | 275 ))
 # ==============================================================================
 
 # --- Default Configuration ---
@@ -155,8 +165,10 @@ HCTM_FEATURE_ID=0x10
 get_tmt_values() {
     local selector=$1 # 0 for current, 1 for default
     local feature_val=$(nvme get-feature "$NVME_DEVICE" -f $HCTM_FEATURE_ID -s "$selector" -o json | jq .dw0)
-    local tmt1=$((feature_val & 0xFFFF))
-    local tmt2=$(((feature_val >> 16) & 0xFFFF))
+    # local tmt1=$((feature_val & 0xFFFF))
+    # local tmt2=$(((feature_val >> 16) & 0xFFFF))
+    local tmt2_k=$((feature_val & 0xFFFF))
+    local tmt1_k=$(((feature_val >> 16) & 0xFFFF))
     echo "$tmt1 $tmt2"
 }
 
@@ -197,7 +209,8 @@ if [ "$NEW_TMT2_K" -gt "$MXTMT_K" ]; then
 fi
 echo "  [OK] New values are within the drive's supported range."
 
-SET_VALUE=$(( (NEW_TMT2_K << 16) | NEW_TMT1_K ))
+#SET_VALUE=$(( (NEW_TMT2_K << 16) | NEW_TMT1_K ))
+SET_VALUE=$(( (NEW_TMT1_K << 16) | NEW_TMT2_K ))
 SET_VALUE_HEX=$(printf "0x%x" $SET_VALUE)
 echo "  - Executing: nvme set-feature $NVME_DEVICE -f $HCTM_FEATURE_ID -v $SET_VALUE_HEX"
 nvme set-feature "$NVME_DEVICE" -f $HCTM_FEATURE_ID -v "$SET_VALUE"
