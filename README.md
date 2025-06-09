@@ -40,4 +40,5 @@ Nvme Host Controlled Thermal Management scripts repository. Initially created to
     hexval=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 0 | awk -F: '{print $NF}'); vals=$((hexval)); echo "$(((vals >> 16) & 0xFFFF)) $((vals & 0xFFFF)) Kelvin^"
   #### Set your TMT1 and TMT2 values. Here I assume the reported mntmt was 273 Kelvin (0C)
     sudo nvme set-feature /dev/nvme0 -f 0x10 -v $(( (273 << 16) | 275 ))
-  #### Note that all values from SSD are reported in Kelvin. Make sure to keep it in Kelvin!!! But if you're curious about your SSD's limits you can convert it to human readable format by seeing what it is in celcius.  Celcius = X - 273
+  #### Note that all values from SSD are reported in Kelvin. Make sure to keep it in Kelvin!!! But if you're curious about your SSD's limits you can convert it to human readable format by seeing what it is in celcius.
+      Note: Celcius = X - 273
