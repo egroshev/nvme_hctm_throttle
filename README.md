@@ -4,6 +4,7 @@ Nvme Host Controlled Thermal Management scripts repository. Initially created to
 
 # set_min_tmt.sh
 ### USAGE:
+    chmod +x ./set_min_tmt.sh
     sudo ./set_min_tmt.sh [OPTIONS]
 ### OPTIONS:
     --device, -d <path>     Specify the NVMe device (e.g., /dev/nvme1).
