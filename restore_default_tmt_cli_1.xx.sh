@@ -16,13 +16,14 @@
 # OPTIONS:
 #   --device, -d <path>     Specify the NVMe device (e.g., /dev/nvme1).
 #                           Defaults to /dev/nvme0.
+#   --save                  Makes the change persistent across reboots.
 #
 # EXAMPLE:
 #   # Restore defaults on the primary NVMe drive
-#   sudo ./restore_defaults.sh
+#   sudo ./restore_defaults.sh --save
 #
 #   # Restore defaults on a secondary NVMe drive
-#   sudo ./restore_defaults.sh --device /dev/nvme1
+#   sudo ./restore_defaults.sh --device /dev/nvme1 --save
 #
 # REQUIREMENTS:
 # 1. 'nvme-cli' version 1.1 or newer must be installed.
@@ -31,6 +32,7 @@
 
 # --- Default Configuration ---
 NVME_DEVICE="/dev/nvme0"
+SAVE_FEATURE=false
 
 # --- Script Input Processing ---
 while [[ $# -gt 0 ]]; do
@@ -41,9 +43,13 @@ while [[ $# -gt 0 ]]; do
         shift # past argument
         shift # past value
         ;;
+        --save)
+        SAVE_FEATURE=true
+        shift # past argument
+        ;;
         *)    # unknown option
         echo "ERROR: Unknown option '$1'"
-        echo "Usage: $0 [--device <path>]"
+        echo "Usage: $0 [--device <path>] [--save]"
         exit 1
         ;;
     esac
@@ -115,11 +121,20 @@ echo
 # --- 2. Set New Values to Defaults ---
 echo "[STEP 2] Applying factory default values..."
 
+# Prepare the --save option flag if requested
+save_opt=""
+if [ "$SAVE_FEATURE" = true ]; then
+    echo "  - Persistence: The values will be SAVED and will persist after a reboot."
+    save_opt="--save"
+else
+    echo "  - Persistence: The values are TEMPORARY and will reset on reboot."
+fi
+
 # Correctly pack TMT1 into high bits and TMT2 into low bits
 SET_VALUE=$(( (DEFAULT_TMT1_K << 16) | DEFAULT_TMT2_K ))
 SET_VALUE_HEX=$(printf "0x%x" $SET_VALUE)
-echo "  - Executing: nvme set-feature $NVME_DEVICE -f $HCTM_FEATURE_ID -v $SET_VALUE_HEX"
-nvme set-feature "$NVME_DEVICE" -f $HCTM_FEATURE_ID -v "$SET_VALUE"
+echo "  - Executing: nvme set-feature $NVME_DEVICE -f $HCTM_FEATURE_ID -v $SET_VALUE_HEX $save_opt"
+nvme set-feature "$NVME_DEVICE" -f $HCTM_FEATURE_ID -v "$SET_VALUE" $save_opt
 if [ $? -ne 0 ]; then
     echo "  [FAIL] Failed to set new TMT values. Aborting."
     exit 1
@@ -144,4 +159,3 @@ fi
 echo
 
 echo "--- Script Finished ---"
-

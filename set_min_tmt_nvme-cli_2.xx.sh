@@ -20,16 +20,17 @@
 #                           Defaults to /dev/nvme0.
 #   --change-both <bool>    Set to 'true' to change both TMT1 and TMT2, or 'false'
 #                           to change only TMT1. Defaults to 'false'.
+#   --save                  Makes the change persistent across reboots.
 #
 # EXAMPLES:
-#   # Change ONLY TMT1 on the default device (default behavior)
+#   # Change ONLY TMT1 on the default device only until next reboot (default behavior)
 #   sudo ./set_min_tmt.sh
 #
-#   # Change BOTH TMT1 and TMT2 on the default device
-#   sudo ./set_min_tmt.sh --change-both true
+#   # Change BOTH TMT1 and TMT2 on the default device and keep changes across reboots.
+#   sudo ./set_min_tmt.sh --change-both true --save
 #
-#   # Change BOTH TMT1 and TMT2 on a specific device
-#   sudo ./set_min_tmt.sh --device /dev/nvme1 --change-both TRUE
+#   # Change BOTH TMT1 and TMT2 on a specific device and keep changes across reboots.
+#   sudo ./set_min_tmt.sh --device /dev/nvme1 --change-both TRUE --save
 #
 # REQUIREMENTS:
 # 1. 'nvme-cli' version 2.1 or greater must be installed. (e.g., sudo apt-get install nvme-cli).
@@ -51,12 +52,13 @@
 # --- Get Current TMT1 and TMT2 values ---
 # vals=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 0 -o json | jq .dw0) && echo "$((vals & 0xFFFF)) $(( (vals >> 16) & 0xFFFF)) Kelvin^"
 # -- Set your TMT1 and TMT2 values. Here I assume the reported mntmt was 273 Kelvin ---
-# sudo nvme set-feature /dev/nvme0 -f 0x10 -v $(( (273 << 16) | 275 ))
+# sudo nvme set-feature /dev/nvme0 -f 0x10 -v $(( (273 << 16) | 275 )) --save
 # ==============================================================================
 
 # --- Default Configuration ---
 NVME_DEVICE="/dev/nvme0"
 CHANGE_BOTH=false
+SAVE_FEATURE=false
 
 # --- Script Input Processing ---
 while [[ $# -gt 0 ]]; do
@@ -84,9 +86,13 @@ while [[ $# -gt 0 ]]; do
         shift # past argument
         shift # past value
         ;;
+        --save)
+        SAVE_FEATURE=true
+        shift # past argument
+        ;;
         *)    # unknown option
         echo "ERROR: Unknown option '$1'"
-        echo "Usage: $0 [--device <path>] [--change-both <true|false>]"
+        echo "Usage: $0 [--device <path>] [--change-both <true|false>] [--save]"
         exit 1
         ;;
     esac
@@ -123,9 +129,9 @@ check_tools() {
     local major=$(echo "$version_string" | cut -d'.' -f1)
     local minor=$(echo "$version_string" | cut -d'.' -f2)
 
-    # We need version > 2.0 (i.e., 2.1 or newer) for JSON support
-    if (( major < 2 )) || (( major == 2 && minor <= 0 )); then
-        echo "ERROR: nvme-cli version must be greater than 2.1 for this script."
+    # We need version > 2.0 for reliable JSON support
+    if (( major < 2 )); then
+        echo "ERROR: nvme-cli version must be 2.0 or greater for this script."
         echo "       Your version is: $version_string"
         exit 1
     fi
@@ -168,8 +174,8 @@ MNTMT_K=$(echo "$ID_CTRL_JSON" | jq .mntmt)
 MXTMT_K=$(echo "$ID_CTRL_JSON" | jq .mxtmt)
 MNTMT_C=$(kelvin_to_celsius "$MNTMT_K")
 MXTMT_C=$(kelvin_to_celsius "$MXTMT_K")
-echo "  - Minimum Settable Threshold (MNTMT): ${MNTMT_K}K or ${MNTMT_C}°C"
-echo "  - Maximum Settable Threshold (MXTMT): ${MXTMT_K}K or ${MXTMT_C}°C"
+echo "  - Minimum Settable Threshold (MNTMT): ${MNTMT_K}K / ${MNTMT_C}°C"
+echo "  - Maximum Settable Threshold (MXTMT): ${MXTMT_K}K / ${MXTMT_C}°C"
 echo
 
 if [ "$MNTMT_K" -eq 0 ] || [ "$MXTMT_K" -eq 0 ]; then
@@ -181,25 +187,24 @@ HCTM_FEATURE_ID=0x10
 get_tmt_values() {
     local selector=$1 # 0 for current, 1 for default
     local feature_val=$(nvme get-feature "$NVME_DEVICE" -f $HCTM_FEATURE_ID -s "$selector" -o json | jq .dw0)
-    # local tmt1=$((feature_val & 0xFFFF))
-    # local tmt2=$(((feature_val >> 16) & 0xFFFF))
-    local tmt2_k=$((feature_val & 0xFFFF))
     local tmt1_k=$(((feature_val >> 16) & 0xFFFF))
-    echo "$tmt1 $tmt2"
+    local tmt2_k=$((feature_val & 0xFFFF))
+
+    echo "$tmt1_k $tmt2_k"
 }
 
 echo "[STEP 3] Reading Thermal Management Thresholds (TMT)..."
 read -r DEFAULT_TMT1_K DEFAULT_TMT2_K < <(get_tmt_values 1)
 DEFAULT_TMT1_C=$(kelvin_to_celsius "$DEFAULT_TMT1_K")
 DEFAULT_TMT2_C=$(kelvin_to_celsius "$DEFAULT_TMT2_K")
-echo "  - Default TMT1: ${DEFAULT_TMT1_K}K or ${DEFAULT_TMT1_C}°C"
-echo "  - Default TMT2: ${DEFAULT_TMT2_K}K or ${DEFAULT_TMT2_C}°C"
+echo "  - Default TMT1: ${DEFAULT_TMT1_K}K / ${DEFAULT_TMT1_C}°C"
+echo "  - Default TMT2: ${DEFAULT_TMT2_K}K / ${DEFAULT_TMT2_C}°C"
 
 read -r CURRENT_TMT1_K CURRENT_TMT2_K < <(get_tmt_values 0)
 CURRENT_TMT1_C=$(kelvin_to_celsius "$CURRENT_TMT1_K")
 CURRENT_TMT2_C=$(kelvin_to_celsius "$CURRENT_TMT2_K")
-echo "  - Current TMT1: ${CURRENT_TMT1_K}K or ${CURRENT_TMT1_C}°C"
-echo "  - Current TMT2: ${CURRENT_TMT2_K}K or ${CURRENT_TMT2_C}°C"
+echo "  - Current TMT1: ${CURRENT_TMT1_K}K / ${CURRENT_TMT1_C}°C"
+echo "  - Current TMT2: ${CURRENT_TMT2_K}K / ${CURRENT_TMT2_C}°C"
 echo
 
 # --- 3. Set New Values ---
@@ -216,8 +221,8 @@ fi
 
 NEW_TMT1_C=$(kelvin_to_celsius "$NEW_TMT1_K")
 NEW_TMT2_C=$(kelvin_to_celsius "$NEW_TMT2_K")
-echo "  - New Target TMT1: ${NEW_TMT1_K}K or ${NEW_TMT1_C}°C"
-echo "  - New Target TMT2: ${NEW_TMT2_K}K or ${NEW_TMT2_C}°C"
+echo "  - New Target TMT1: ${NEW_TMT1_K}K / ${NEW_TMT1_C}°C"
+echo "  - New Target TMT2: ${NEW_TMT2_K}K / ${NEW_TMT2_C}°C"
 
 if [ "$NEW_TMT2_K" -gt "$MXTMT_K" ]; then
     echo "  [FAIL] Calculated TMT2 (${NEW_TMT2_K}K) exceeds drive's maximum (${MXTMT_K}K). Aborting."
@@ -225,11 +230,20 @@ if [ "$NEW_TMT2_K" -gt "$MXTMT_K" ]; then
 fi
 echo "  [OK] New values are within the drive's supported range."
 
-#SET_VALUE=$(( (NEW_TMT2_K << 16) | NEW_TMT1_K ))
+# Prepare the --save option flag if requested
+save_opt=""
+if [ "$SAVE_FEATURE" = true ]; then
+    echo "  - Persistence: The values will be SAVED and will persist after a reboot."
+    save_opt="--save"
+else
+    echo "  - Persistence: The values are TEMPORARY and will reset on reboot."
+fi
+
+# Correctly pack TMT1 into high bits and TMT2 into low bits
 SET_VALUE=$(( (NEW_TMT1_K << 16) | NEW_TMT2_K ))
 SET_VALUE_HEX=$(printf "0x%x" $SET_VALUE)
-echo "  - Executing: nvme set-feature $NVME_DEVICE -f $HCTM_FEATURE_ID -v $SET_VALUE_HEX"
-nvme set-feature "$NVME_DEVICE" -f $HCTM_FEATURE_ID -v "$SET_VALUE"
+echo "  - Executing: nvme set-feature $NVME_DEVICE -f $HCTM_FEATURE_ID -v $SET_VALUE_HEX $save_opt"
+nvme set-feature "$NVME_DEVICE" -f $HCTM_FEATURE_ID -v "$SET_VALUE" $save_opt
 if [ $? -ne 0 ]; then
     echo "  [FAIL] Failed to set new TMT values. Aborting."
     exit 1
@@ -243,8 +257,8 @@ read -r FINAL_TMT1_K FINAL_TMT2_K < <(get_tmt_values 0)
 FINAL_TMT1_C=$(kelvin_to_celsius "$FINAL_TMT1_K")
 FINAL_TMT2_C=$(kelvin_to_celsius "$FINAL_TMT2_K")
 
-echo "  - Final Readout TMT1: ${FINAL_TMT1_K}K or ${FINAL_TMT1_C}°C"
-echo "  - Final Readout TMT2: ${FINAL_TMT2_K}K or ${FINAL_TMT2_C}°C"
+echo "  - Final Readout TMT1: ${FINAL_TMT1_K}K / ${FINAL_TMT1_C}°C"
+echo "  - Final Readout TMT2: ${FINAL_TMT2_K}K / ${FINAL_TMT2_C}°C"
 
 if [ "$FINAL_TMT1_K" -eq "$NEW_TMT1_K" ] && [ "$FINAL_TMT2_K" -eq "$NEW_TMT2_K" ]; then
     echo "  [SUCCESS] The values were updated successfully."

@@ -23,13 +23,14 @@
 #                           Defaults to /dev/nvme0.
 #   --change-both <bool>    Set to 'true' to change both TMT1 and TMT2, or 'false'
 #                           to change only TMT1. Defaults to 'false'.
+#   --save                  Makes the change persistent across reboots.
 #
 # EXAMPLES:
-#   # Change ONLY TMT1 on the default device (default behavior)
+#   # Change ONLY TMT1 on the default device, only until next reboot (default behavior)
 #   sudo ./set_min_tmt.sh
 #
-#   # Change BOTH TMT1 and TMT2 on the default device
-#   sudo ./set_min_tmt.sh --change-both true
+#   # Change BOTH TMT1 and TMT2 on the specific device, and keep setting across reboot.
+#   sudo ./set_min_tmt.sh --device /dev/nvme1 --change-both true --save
 #
 # REQUIREMENTS:
 # # 1. 'nvme-cli' version 1.1 or greater must be installed. (e.g., sudo apt-get install nvme-cli).
@@ -50,12 +51,13 @@
 # --- Get Current TMT1 and TMT2 values ---
 # hexval=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 0 | awk -F: '{print $NF}'); vals=$((hexval)); echo "$(((vals >> 16) & 0xFFFF)) $((vals & 0xFFFF)) Kelvin^"
 # -- Set your TMT1 and TMT2 values. Here I assume the reported mntmt was 273 Kelvin ---
-# sudo nvme set-feature /dev/nvme0 -f 0x10 -v $(( (273 << 16) | 275 ))
+# sudo nvme set-feature /dev/nvme0 -f 0x10 -v $(( (273 << 16) | 275 )) --save
 # ==============================================================================
 
 # --- Default Configuration ---
 NVME_DEVICE="/dev/nvme0"
 CHANGE_BOTH=false
+SAVE_FEATURE=false
 
 # --- Script Input Processing ---
 while [[ $# -gt 0 ]]; do
@@ -83,9 +85,13 @@ while [[ $# -gt 0 ]]; do
         shift # past argument
         shift # past value
         ;;
+        --save)
+        SAVE_FEATURE=true
+        shift # past argument
+        ;;
         *)    # unknown option
         echo "ERROR: Unknown option '$1'"
-        echo "Usage: $0 [--device <path>] [--change-both <true|false>]"
+        echo "Usage: $0 [--device <path>] [--change-both <true|false>] [--save]"
         exit 1
         ;;
     esac
@@ -210,11 +216,20 @@ if [ "$NEW_TMT2_K" -gt "$MXTMT_K" ]; then
 fi
 echo "  [OK] New values are within the drive's supported range."
 
+# Prepare the --save option flag if requested
+save_opt=""
+if [ "$SAVE_FEATURE" = true ]; then
+    echo "  - Persistence: The values will be SAVED and will persist after a reboot."
+    save_opt="--save"
+else
+    echo "  - Persistence: The values are TEMPORARY and will reset on reboot."
+fi
+
 # Correctly pack TMT1 into high bits and TMT2 into low bits
 SET_VALUE=$(( (NEW_TMT1_K << 16) | NEW_TMT2_K ))
 SET_VALUE_HEX=$(printf "0x%x" $SET_VALUE)
-echo "  - Executing: nvme set-feature $NVME_DEVICE -f $HCTM_FEATURE_ID -v $SET_VALUE_HEX"
-nvme set-feature "$NVME_DEVICE" -f $HCTM_FEATURE_ID -v "$SET_VALUE"
+echo "  - Executing: nvme set-feature $NVME_DEVICE -f $HCTM_FEATURE_ID -v $SET_VALUE_HEX $save_opt"
+nvme set-feature "$NVME_DEVICE" -f $HCTM_FEATURE_ID -v "$SET_VALUE" $save_opt
 if [ $? -ne 0 ]; then
     echo "  [FAIL] Failed to set new TMT values. Aborting."
     exit 1
