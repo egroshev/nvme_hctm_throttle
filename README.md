@@ -22,12 +22,22 @@ Nvme Host Controlled Thermal Management scripts repository. Initially created to
 
 
 # nvme-cli command line input (manually setting without the need of set_min_tmt.sh)
-### EXAMPLE:
+### EXAMPLE (nvme-cli 2.1+):
   #### Check if HCTM is supported (1), and minimum and maximum accepted TMT temperatures.
     sudo nvme id-ctrl /dev/nvme0 -o json | jq -r '"\(.hctma) \(.mntmt) \(.mxtmt)"'
   #### Get Default TMT1 and TMT2 values
-    vals=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 1 -o json | jq .dw0) && echo "$((vals & 0xFFFF)) $(( (vals >> 16) & 0xFFFF))"
+    vals=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 1 -o json | jq .dw0) && echo "$((vals & 0xFFFF)) $(( (vals >> 16) & 0xFFFF)) Kelvin^"
   #### Get Current TMT1 and TMT2 values
-    vals=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 0 -o json | jq .dw0) && echo "$((vals & 0xFFFF)) $(( (vals >> 16) & 0xFFFF))"
+    vals=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 0 -o json | jq .dw0) && echo "$((vals & 0xFFFF)) $(( (vals >> 16) & 0xFFFF)) Kelvin^"
   #### Set your TMT1 and TMT2 values. Here I assume the reported mntmt was 273 Kelvin (0C)
     sudo nvme set-feature /dev/nvme0 -f 0x10 -v $(( (273 << 16) | 275 ))
+### EXAMPLE (nvme-cli 1.1+):
+  #### Check if HCTM is supported (1), and minimum and maximum accepted TMT temperatures.
+    sudo nvme id-ctrl /dev/nvme0 | grep -E '^hctma|^mntmt|^mxtmt' | awk '{print $3}' | xargs
+  #### Get Default TMT1 and TMT2 values
+    hexval=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 1 | awk -F: '{print $NF}'); vals=$((hexval)); echo "$(((vals >> 16) & 0xFFFF)) $((vals & 0xFFFF)) Kelvin^"
+  #### Get Current TMT1 and TMT2 values
+    hexval=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 0 | awk -F: '{print $NF}'); vals=$((hexval)); echo "$(((vals >> 16) & 0xFFFF)) $((vals & 0xFFFF)) Kelvin^"
+  #### Set your TMT1 and TMT2 values. Here I assume the reported mntmt was 273 Kelvin (0C)
+    sudo nvme set-feature /dev/nvme0 -f 0x10 -v $(( (273 << 16) | 275 ))
+  #### Note that all values from SSD are reported in Kelvin. Make sure to keep it in Kelvin!!! But if you're curious about your SSD's limits you can convert it to human readable format by seeing what it is in celcius.  Celcius = X - 273

@@ -47,9 +47,9 @@
 # --- Check if HCTM is supported (1), and  minimum and maiximum accepted TMT temperature.
 # sudo nvme id-ctrl /dev/nvme0 -o json | jq -r '"\(.hctma) \(.mntmt) \(.mxtmt)"'
 # --- Get Default TMT1 and TMT2 values ---
-# vals=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 1 -o json | jq .dw0) && echo "$((vals & 0xFFFF)) $(( (vals >> 16) & 0xFFFF))"
+# vals=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 1 -o json | jq .dw0) && echo "$((vals & 0xFFFF)) $(( (vals >> 16) & 0xFFFF)) Kelvin^"
 # --- Get Current TMT1 and TMT2 values ---
-# vals=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 0 -o json | jq .dw0) && echo "$((vals & 0xFFFF)) $(( (vals >> 16) & 0xFFFF))"
+# vals=$(sudo nvme get-feature /dev/nvme0 -f 0x10 -s 0 -o json | jq .dw0) && echo "$((vals & 0xFFFF)) $(( (vals >> 16) & 0xFFFF)) Kelvin^"
 # -- Set your TMT1 and TMT2 values. Here I assume the reported mntmt was 273 Kelvin ---
 # sudo nvme set-feature /dev/nvme0 -f 0x10 -v $(( (273 << 16) | 275 ))
 # ==============================================================================
