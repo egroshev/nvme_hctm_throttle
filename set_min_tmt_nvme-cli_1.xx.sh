@@ -132,7 +132,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # 1a. Check if HCTM is supported by parsing text output
-HCTMA_SUPPORTED=$(echo "$ID_CTRL_OUTPUT" | grep '^hctma' | awk '{print $3}')
+HCTMA_SUPPORTED=$(( $(echo "$ID_CTRL_OUTPUT" | grep '^hctma' | awk '{print $3}') ))
 if [ "$HCTMA_SUPPORTED" -eq 1 ]; then
     echo "  [OK] Host Controlled Thermal Management (HCTMA) is supported."
 else
@@ -143,8 +143,8 @@ echo
 
 # 1b. Get and print Minimum and Maximum TMT values by parsing text output
 echo "[STEP 2] Checking Temperature Threshold Range..."
-MNTMT_K=$(echo "$ID_CTRL_OUTPUT" | grep '^mntmt' | awk '{print $3}')
-MXTMT_K=$(echo "$ID_CTRL_OUTPUT" | grep '^mxtmt' | awk '{print $3}')
+MNTMT_K=$(( $(echo "$ID_CTRL_OUTPUT" | grep '^mntmt' | awk '{print $3}') ))
+MXTMT_K=$(( $(echo "$ID_CTRL_OUTPUT" | grep '^mxtmt' | awk '{print $3}') ))
 MNTMT_C=$(kelvin_to_celsius "$MNTMT_K")
 MXTMT_C=$(kelvin_to_celsius "$MXTMT_K")
 echo "  - Minimum Settable Threshold (MNTMT): ${MNTMT_K}K / ${MNTMT_C}°C"
