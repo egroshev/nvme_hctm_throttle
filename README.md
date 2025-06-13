@@ -25,6 +25,8 @@ Nvme Host Controlled Thermal Management scripts repository. Initially created to
 
 # nvme-cli command line input (manually setting without the need of set_min_tmt.sh)
 ### EXAMPLE (nvme-cli 2.1+):
+  #### Identify your NVMe SSD device (match it to the MN Model number on your SSD sticker).
+    sudo nvme list
   #### Check if HCTM is supported (1), and minimum and maximum accepted TMT temperatures.
     sudo nvme id-ctrl /dev/nvme0 -o json | jq -r '"\(.hctma) \(.mntmt) \(.mxtmt)"'
   #### Get Default TMT1 and TMT2 values
@@ -34,6 +36,8 @@ Nvme Host Controlled Thermal Management scripts repository. Initially created to
   #### Set your TMT1 and TMT2 values. Here I assume the reported mntmt was 273 Kelvin (0C)
     sudo nvme set-feature /dev/nvme0 -f 0x10 -v $(( (273 << 16) | 275 )) --save
 ### EXAMPLE (nvme-cli 1.1+):
+  #### Identify your NVMe SSD device (match it to the MN Model number on your SSD sticker).
+    sudo nvme list
   #### Check if HCTM is supported (1), and minimum and maximum accepted TMT temperatures.
     sudo nvme id-ctrl /dev/nvme0 | grep -E '^hctma|^mntmt|^mxtmt' | awk '{print $3}' | xargs
   #### Get Default TMT1 and TMT2 values
@@ -43,4 +47,4 @@ Nvme Host Controlled Thermal Management scripts repository. Initially created to
   #### Set your TMT1 and TMT2 values. Here I assume the reported mntmt was 273 Kelvin (0C)
     sudo nvme set-feature /dev/nvme0 -f 0x10 -v $(( (273 << 16) | 275 )) --save
   #### Note that all values from SSD are reported in Kelvin. Make sure to keep it in Kelvin!!! But if you're curious about your SSD's limits you can convert it to human readable format by seeing what it is in celcius.
-      Note: Celcius = X - 273
+      Note: Celcius = X - 273 Kelvin

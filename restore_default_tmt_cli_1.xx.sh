@@ -15,7 +15,7 @@
 #
 # OPTIONS:
 #   --device, -d <path>     Specify the NVMe device (e.g., /dev/nvme1).
-#                           Defaults to /dev/nvme0.
+#                           Defaults to /dev/nvme1.
 #   --save                  Makes the change persistent across reboots.
 #
 # EXAMPLE:
@@ -23,7 +23,7 @@
 #   sudo ./restore_defaults.sh --save
 #
 #   # Restore defaults on a secondary NVMe drive
-#   sudo ./restore_defaults.sh --device /dev/nvme1 --save
+#   sudo ./restore_defaults.sh --device /dev/nvme2 --save
 #
 # REQUIREMENTS:
 # 1. 'nvme-cli' version 1.1 or newer must be installed.
@@ -31,7 +31,7 @@
 # ==============================================================================
 
 # --- Default Configuration ---
-NVME_DEVICE="/dev/nvme0"
+NVME_DEVICE="/dev/nvme1"
 SAVE_FEATURE=false
 
 # --- Script Input Processing ---

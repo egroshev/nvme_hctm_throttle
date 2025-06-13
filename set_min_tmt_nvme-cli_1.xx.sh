@@ -20,7 +20,7 @@
 #
 # OPTIONS:
 #   --device, -d <path>     Specify the NVMe device (e.g., /dev/nvme1).
-#                           Defaults to /dev/nvme0.
+#                           Defaults to /dev/nvme1.
 #   --change-both <bool>    Set to 'true' to change both TMT1 and TMT2, or 'false'
 #                           to change only TMT1. Defaults to 'false'.
 #   --save                  Makes the change persistent across reboots.
@@ -30,7 +30,7 @@
 #   sudo ./set_min_tmt.sh
 #
 #   # Change BOTH TMT1 and TMT2 on the specific device, and keep setting across reboot.
-#   sudo ./set_min_tmt.sh --device /dev/nvme1 --change-both true --save
+#   sudo ./set_min_tmt.sh --device /dev/nvme2 --change-both true --save
 #
 # REQUIREMENTS:
 # # 1. 'nvme-cli' version 1.1 or greater must be installed. (e.g., sudo apt-get install nvme-cli).
@@ -55,7 +55,7 @@
 # ==============================================================================
 
 # --- Default Configuration ---
-NVME_DEVICE="/dev/nvme0"
+NVME_DEVICE="/dev/nvme1"
 CHANGE_BOTH=false
 SAVE_FEATURE=false
 
