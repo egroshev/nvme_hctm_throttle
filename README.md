@@ -8,7 +8,7 @@ Nvme Host Controlled Thermal Management scripts repository. Initially created to
     sudo ./set_min_tmt.sh [OPTIONS]
 ### OPTIONS:
     --device, -d <path>     Specify the NVMe device (e.g., /dev/nvme1).
-                            Defaults to /dev/nvme0.
+                            Defaults to /dev/nvme1.
     --change-both <bool>    Set to 'true' to change both TMT1 and TMT2, or 'false'
                             to change only TMT1. Defaults to 'false'.
     --save                  Makes the settings change persistent across reboots.
@@ -20,7 +20,7 @@ Nvme Host Controlled Thermal Management scripts repository. Initially created to
     sudo ./set_min_tmt.sh --change-both true --save
 
   #### Change BOTH TMT1 and TMT2 on a specific device and save
-    sudo ./set_min_tmt.sh --device /dev/nvme1 --change-both TRUE --save
+    sudo ./set_min_tmt.sh --device /dev/nvme2 --change-both TRUE --save
 
 
 # nvme-cli command line input (manually setting without the need of set_min_tmt.sh)
