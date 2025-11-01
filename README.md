@@ -1,7 +1,7 @@
 # nvme_hctm_throttle repository
 Nvme Host Controlled Thermal Management scripts repository. Initially created to limit the power consumption and performance of an 2230 2242 NVMe M.2 SSD in order to not exceed the 4.5W limit of the USB-C DockCase for NVMe SSDs to be used as USB devices.
 
-The way this works is the script sets TMT1 and/or TMT2 to it's minimum allowed value, which is usually at 0C or below, to force it to throttle at all points above that minimum temp. Your SSD usually always opperates at above 0C, thus allowing permanent throttling to take place.
+The way this works is the script sets TMT1 and/or TMT2 to it's minimum allowed value, which is usually at or below 0C, to force it to throttle at all points above that minimum temp. Your SSD usually always opperates at above 0C, thus allowing permanent throttling to take place.
 
 
 # set_min_tmt.sh
