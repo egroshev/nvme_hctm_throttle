@@ -25,7 +25,7 @@ The way this works is the script sets TMT1 and/or TMT2 to it's minimum allowed v
     sudo ./set_min_tmt.sh --device /dev/nvme2 --change-both TRUE --save
 
 
-# nvme-cli command line input (manually setting without the need of set_min_tmt.sh)
+# Extra: Manually performing CLI entry (without script)
 ### EXAMPLE (nvme-cli 2.1+):
   #### Identify your NVMe SSD device (match it to the MN Model number on your SSD sticker).
     sudo nvme list
