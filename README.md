@@ -3,8 +3,9 @@ Nvme Host Controlled Thermal Management scripts repository. Initially created to
 
 The way this works is the script sets TMT1 and/or TMT2 to it's minimum allowed value, which is usually at or below 0C, to force it to throttle at all points above that minimum temp. Your SSD usually always opperates at above 0C, thus allowing permanent throttling to take place.
 
+Note: Suggest to use **set_min_tmt_nvme-cli_2.xx.sh**
 
-# set_min_tmt.sh
+# Using set_min_tmt.sh
 ### USAGE:
     chmod +x ./set_min_tmt.sh
     sudo ./set_min_tmt.sh [OPTIONS]
